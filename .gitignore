@@ -1,0 +1,4 @@
+*.go
+*.log
+/.claude
+/result
