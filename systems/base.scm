@@ -19,7 +19,7 @@
   ;; it is told to look.  It is declared here rather than injected at boot so
   ;; that whoever writes a machine's runtime file cannot weaken it.
   (gitops-introduction
-   (commit "REPLACE-WITH-THE-FIRST-SIGNED-COMMIT-OF-THIS-REPOSITORY")
+   (commit "4a72fc42b3e6b879d8664dc980c2843a99494349")
    (signer "90C8 D92A 6D65 856C 0F84  EAE2 7E1F FB95 9BB3 3640")))
 
 (define* (%homelab-services #:key (extra '()))
