@@ -43,7 +43,12 @@ the reader that tells it which machine it is, and enough to reach the network."
                    (url "https://github.com/prop4n/guix-homelab.git")
                    (branch "main")
                    (system-file "systems/template.scm")
-                   (channels-file "channels.scm")
+                   ;; Left unset on purpose for now: with 'channels-file' the
+                   ;; agent has to clone guix.git before it can evaluate
+                   ;; anything, which every fresh machine would pay for.  The
+                   ;; machines therefore run the Guix this image was built
+                   ;; with until that cost is dealt with.
+                   ;; (channels-file "channels.scm")
                    (runtime-config-file "/etc/guix-gitops/runtime.scm")
                    (introduction %homelab-introduction)
                    (interval 900)
