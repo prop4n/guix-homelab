@@ -1,50 +1,42 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; A web server whose page is defined here.  nginx serves from a fixed path,
-;; /srv/http, and an activation copies the page there on every reconfigure.
-;; This matters: Guix does not restart a service whose definition changed, so
-;; if nginx served straight from the store the page would only change on a
-;; restart.  Serving from a fixed path that the activation refreshes means a
-;; git push updates the page with no restart at all.
+;; web02 now runs a real stateful application: Miniflux, a feed reader, backed
+;; by PostgreSQL.  Miniflux listens on localhost:8080; nginx sits in front on
+;; port 80 and proxies to it.  Deploying all of this -- database, roles,
+;; migrations, the app, the reverse proxy -- is what a single git push does.
 
 (use-modules (systems base)
              (gnu)
-             (gnu services web)
-             (guix gexp))
-
-(define %site
-  (computed-file
-   "web02-site"
-   #~(begin
-       (mkdir #$output)
-       (call-with-output-file (string-append #$output "/index.html")
-         (lambda (port)
-           (display "<!doctype html>
-<title>web02</title>
-<h1>web02 — version 4</h1>
-<p>Cette page a change par un simple git push.</p>
-" port))))))
-
-(define %publish-site
-  (simple-service
-   'web02-content activation-service-type
-   (with-imported-modules '((guix build utils))
-     #~(begin
-         (use-modules (guix build utils))
-         (when (file-exists? "/srv/http")
-           (delete-file-recursively "/srv/http"))
-         (mkdir-p "/srv/http")
-         (copy-recursively #$%site "/srv/http")
-         (for-each (lambda (f) (chmod f #o644))
-                   (find-files "/srv/http"))))))
+             (gnu packages databases)
+             (gnu services databases)
+             (gnu services web))
 
 (homelab-operating-system
  #:host-name "web02"
  #:extra-services
- (list %publish-site
+ (list (service postgresql-service-type
+                (postgresql-configuration
+                 (postgresql postgresql)))
+       (service postgresql-role-service-type)
+
+       (service miniflux-service-type
+                (miniflux-configuration
+                 (listen-address "127.0.0.1:8080")
+                 (base-url "http://localhost/")
+                 (create-administrator-account? #t)
+                 (administrator-account-name "admin")
+                 (administrator-account-password "miniflux123")))
+
        (service nginx-service-type
                 (nginx-configuration
                  (server-blocks
                   (list (nginx-server-configuration
                          (listen '("80"))
-                         (root "/srv/http"))))))))
+                         (locations
+                          (list (nginx-location-configuration
+                                 (uri "/")
+                                 (body
+                                  (list "proxy_pass http://127.0.0.1:8080;"
+                                        "proxy_set_header Host $host;"
+                                        "proxy_set_header X-Forwarded-For $remote_addr;"
+                                        "proxy_set_header X-Forwarded-Proto $scheme;"))))))))))))
