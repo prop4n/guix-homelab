@@ -14,6 +14,39 @@
 
 (use-service-modules base networking ssh)
 
+;;; The channel instance, shipped rather than fetched.
+;;;
+;;; Without this, a machine's first reconfiguration begins by cloning
+;;; guix.git -- hundreds of megabytes before it can evaluate anything.  Since
+;;; channels.scm pins full commit hashes, Guix can name the instance it wants
+;;; without asking the network: it hashes the commits, looks in its inferior
+;;; cache, and stops there if it finds an entry.  So the entry is put in the
+;;; image, and the instance comes with it.
+;;;
+;;; Both values below must be refreshed together whenever channels.scm moves:
+;;;
+;;;   guix time-machine -C channels.scm -- describe
+;;;   readlink -f /var/guix/profiles/per-user/$USER/inferiors/<key>
+;;;
+;;; The key is the base32 SHA-256 of the pinned commits, concatenated in the
+;;; order they appear in channels.scm.  A stale key is not fatal: the machine
+;;; falls back to cloning.
+
+(define %channel-instance-key
+  "a642la7obo6hobkvl57qox6bdyq2ozbmksb4ywk4iyztejiyii7a")
+
+(define %channel-instance
+  "/gnu/store/jli0k2ad8raii54fs42qy07wygpkd7ld-profile")
+
+(define %inferior-cache-service
+  (simple-service
+   'gitops-inferior-cache activation-service-type
+   #~(let* ((directory "/var/guix/profiles/per-user/root/inferiors")
+            (entry (string-append directory "/" #$%channel-instance-key)))
+       (mkdir-p directory)
+       (unless (file-exists? entry)
+         (symlink #$%channel-instance entry)))))
+
 (define %homelab-introduction
   ;; Every machine refuses commits that are not signed by this key, wherever
   ;; it is told to look.  It is declared here rather than injected at boot so
@@ -27,7 +60,9 @@
 the reader that tells it which machine it is, and enough to reach the network."
   (append
    extra
-   (list (service dhcpcd-service-type)
+   (list %inferior-cache-service
+
+         (service dhcpcd-service-type)
 
          (service openssh-service-type
                   (openssh-configuration
