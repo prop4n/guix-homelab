@@ -49,6 +49,9 @@ the reader that tells it which machine it is, and enough to reach the network."
                    ;; machines therefore run the Guix this image was built
                    ;; with until that cost is dealt with.
                    ;; (channels-file "channels.scm")
+                   ;; The machine files here say (use-modules (systems base)),
+                   ;; so the root of the checkout has to be on the load path.
+                   (extra-load-path '("."))
                    (runtime-config-file "/etc/guix-gitops/runtime.scm")
                    (introduction %homelab-introduction)
                    (interval 900)
