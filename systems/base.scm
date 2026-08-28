@@ -20,6 +20,7 @@
   #:use-module (gnu)
   #:use-module (gnu system image)
   #:use-module (gitops services agent)
+  #:use-module (guix channels)
   #:use-module (metadata services nocloud)
   #:export (%homelab-channels
             %homelab-introduction
@@ -29,29 +30,27 @@
 (use-service-modules base networking ssh)
 
 (define %homelab-channels
-  ;; Installed as /etc/guix/channels.scm so the machine's own 'guix pull' sees
-  ;; the same channels -- and the same substitute servers below make it fast.
-  (plain-file "channels.scm" "\
-(list (channel
-       (name 'guix)
-       (url \"https://git.guix.gnu.org/guix.git\")
-       (branch \"master\")
-       (introduction
-        (make-channel-introduction
-         \"9edb3f66fd807b096b48283debdcddccfea34bad\"
-         (openpgp-fingerprint
-          \"BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA\"))))
-
-      (channel
-       (name 'nonguix)
-       (url \"https://gitlab.com/nonguix/nonguix\")
-       (branch \"master\")
-       (introduction
-        (make-channel-introduction
-         \"897c1a470da759236cc11798f4e0a5f7d4d59fbc\"
-         (openpgp-fingerprint
-          \"2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5\")))))
-"))
+  ;; Given to the guix service below, which installs it as
+  ;; /etc/guix/channels.scm so the machine's own 'guix pull' sees the same
+  ;; channels -- and the substitute servers make it fast.
+  (list (channel
+         (name 'guix)
+         (url "https://git.guix.gnu.org/guix.git")
+         (branch "master")
+         (introduction
+          (make-channel-introduction
+           "9edb3f66fd807b096b48283debdcddccfea34bad"
+           (openpgp-fingerprint
+            "BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA"))))
+        (channel
+         (name 'nonguix)
+         (url "https://gitlab.com/nonguix/nonguix")
+         (branch "master")
+         (introduction
+          (make-channel-introduction
+           "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
+           (openpgp-fingerprint
+            "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))))
 
 (define %homelab-introduction
   ;; Every machine refuses commits that are not signed by this key, wherever
@@ -73,9 +72,6 @@ the reader that tells it which machine it is, and enough to reach the network."
                       (openssh-configuration
                        (permit-root-login 'prohibit-password)
                        (password-authentication? #f)))
-
-             (simple-service 'homelab-channels etc-service-type
-                             (list `("guix/channels.scm" ,%homelab-channels)))
 
              ;; Runs once at boot: copies this host's user data into the file
              ;; the agent reads.  Harmless without a datasource.
@@ -99,6 +95,13 @@ the reader that tells it which machine it is, and enough to reach the network."
     (guix-service-type
      config => (guix-configuration
                 (inherit config)
+                ;; Install channels.scm through the guix service itself, not a
+                ;; separate etc entry: doing it separately turns /etc/guix into
+                ;; a read-only store symlink, and the service can then no longer
+                ;; write the substitute ACL there -- which silently disables
+                ;; every substitute and turns each reconfigure into a
+                ;; from-source rebuild.
+                (channels %homelab-channels)
                 (substitute-urls
                  (append (list "https://substitutes.nonguix.org")
                          %default-substitute-urls))
