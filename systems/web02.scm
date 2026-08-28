@@ -18,8 +18,8 @@
          (lambda (port)
            (display "<!doctype html>
 <title>web02</title>
-<h1>web02</h1>
-<p>Served by a machine that configured itself from Git.</p>
+<h1>web02 — version 2</h1>
+<p>Cette page a change par un simple git push.</p>
 " port))))))
 
 (homelab-operating-system
