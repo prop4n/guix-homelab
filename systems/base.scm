@@ -43,12 +43,13 @@ the reader that tells it which machine it is, and enough to reach the network."
                    (url "https://github.com/prop4n/guix-homelab.git")
                    (branch "main")
                    (system-file "systems/template.scm")
-                   ;; Left unset on purpose for now: with 'channels-file' the
-                   ;; agent has to clone guix.git before it can evaluate
-                   ;; anything, which every fresh machine would pay for.  The
-                   ;; machines therefore run the Guix this image was built
-                   ;; with until that cost is dealt with.
-                   ;; (channels-file "channels.scm")
+                   ;; Not optional: the machine files below use services from
+                   ;; guix-gitops and guix-metadata, and the only way the
+                   ;; agent's Guix knows those modules is by evaluating in an
+                   ;; inferior built from these channels.  The price is that a
+                   ;; fresh machine clones guix.git before its first
+                   ;; reconfiguration.
+                   (channels-file "channels.scm")
                    ;; The machine files here say (use-modules (systems base)),
                    ;; so the root of the checkout has to be on the load path.
                    (extra-load-path '("."))
