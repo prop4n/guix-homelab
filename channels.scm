@@ -8,7 +8,9 @@
 
 (list (channel
        (name 'guix)
-       (url "https://git.savannah.gnu.org/git/guix.git")
+       ;; The same mirror this workstation pulls from.  git.savannah.gnu.org
+       ;; refused the connection outright from a virtual machine.
+       (url "https://git.guix.gnu.org/guix.git")
        (branch "master")
        (commit "e5186f7bd43e5a12228ffd9b058fd346a4a94ba1")
        (introduction
