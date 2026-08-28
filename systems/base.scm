@@ -7,45 +7,39 @@
   #:use-module (gnu)
   #:use-module (gnu system image)
   #:use-module (gitops services agent)
+  #:use-module (guix gexp)
   #:use-module (metadata services nocloud)
-  #:export (%homelab-introduction
+  #:export (%homelab-channels
+            %homelab-introduction
             %homelab-services
             homelab-operating-system))
 
 (use-service-modules base networking ssh)
 
-;;; The channel instance, shipped rather than fetched.
-;;;
-;;; Without this, a machine's first reconfiguration begins by cloning
-;;; guix.git -- hundreds of megabytes before it can evaluate anything.  Since
-;;; channels.scm pins full commit hashes, Guix can name the instance it wants
-;;; without asking the network: it hashes the commits, looks in its inferior
-;;; cache, and stops there if it finds an entry.  So the entry is put in the
-;;; image, and the instance comes with it.
-;;;
-;;; Both values below must be refreshed together whenever channels.scm moves:
-;;;
-;;;   guix time-machine -C channels.scm -- describe
-;;;   readlink -f /var/guix/profiles/per-user/$USER/inferiors/<key>
-;;;
-;;; The key is the base32 SHA-256 of the pinned commits, concatenated in the
-;;; order they appear in channels.scm.  A stale key is not fatal: the machine
-;;; falls back to cloning.
+(define %homelab-channels
+  ;; Installed as /etc/guix/channels.scm, so the machine's own 'guix pull'
+  ;; sees the same channels its configuration is written against.
+  (plain-file "channels.scm" "\
+(list (channel
+       (name 'guix)
+       (url \"https://git.guix.gnu.org/guix.git\")
+       (branch \"master\")
+       (introduction
+        (make-channel-introduction
+         \"9edb3f66fd807b096b48283debdcddccfea34bad\"
+         (openpgp-fingerprint
+          \"BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA\"))))
 
-(define %channel-instance-key
-  "4wpiutnd3blsopwe5xpkxrwc6wjonikamrcr2u6rvaeb7vt2v6bq")
-
-(define %channel-instance
-  "/gnu/store/l2yfycqj19n43mmq42zb6xk5visn3x3v-profile")
-
-(define %inferior-cache-service
-  (simple-service
-   'gitops-inferior-cache activation-service-type
-   #~(let* ((directory "/var/guix/profiles/per-user/root/inferiors")
-            (entry (string-append directory "/" #$%channel-instance-key)))
-       (mkdir-p directory)
-       (unless (file-exists? entry)
-         (symlink #$%channel-instance entry)))))
+      (channel
+       (name 'nonguix)
+       (url \"https://gitlab.com/nonguix/nonguix\")
+       (branch \"master\")
+       (introduction
+        (make-channel-introduction
+         \"897c1a470da759236cc11798f4e0a5f7d4d59fbc\"
+         (openpgp-fingerprint
+          \"2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5\")))))
+"))
 
 (define %homelab-introduction
   ;; Every machine refuses commits that are not signed by this key, wherever
@@ -58,41 +52,47 @@
 (define* (%homelab-services #:key (extra '()))
   "Return the services every machine runs: the agent that keeps it in sync,
 the reader that tells it which machine it is, and enough to reach the network."
-  (append
-   extra
-   (list %inferior-cache-service
+  (modify-services
+      (append
+       extra
+       (list (service dhcpcd-service-type)
 
-         (service dhcpcd-service-type)
+             (service openssh-service-type
+                      (openssh-configuration
+                       (permit-root-login 'prohibit-password)
+                       (password-authentication? #f)))
 
-         (service openssh-service-type
-                  (openssh-configuration
-                   (permit-root-login 'prohibit-password)
-                   (password-authentication? #f)))
+             (simple-service 'homelab-channels etc-service-type
+                             (list `("guix/channels.scm" ,%homelab-channels)))
 
-         ;; Runs once at boot: copies this host's user data into the file the
-         ;; agent reads.  Harmless on a machine that has no datasource.
-         (service nocloud-service-type)
+             ;; Runs once at boot: copies this host's user data into the file
+             ;; the agent reads.  Harmless without a datasource.
+             (service nocloud-service-type)
 
-         (service gitops-agent-service-type
-                  (gitops-agent-configuration
-                   (url "https://github.com/prop4n/guix-homelab.git")
-                   (branch "main")
-                   (system-file "systems/template.scm")
-                   ;; Not optional: the machine files below use services from
-                   ;; guix-gitops and guix-metadata, and the only way the
-                   ;; agent's Guix knows those modules is by evaluating in an
-                   ;; inferior built from these channels.  The price is that a
-                   ;; fresh machine clones guix.git before its first
-                   ;; reconfiguration.
-                   (channels-file "channels.scm")
-                   ;; The machine files here say (use-modules (systems base)),
-                   ;; so the root of the checkout has to be on the load path.
-                   (extra-load-path '("."))
-                   (runtime-config-file "/etc/guix-gitops/runtime.scm")
-                   (introduction %homelab-introduction)
-                   (interval 900)
-                   (health (gitops-health-configuration (port 9902))))))
-   %base-services))
+             (service gitops-agent-service-type
+                      (gitops-agent-configuration
+                       (url "https://github.com/prop4n/guix-homelab.git")
+                       (branch "main")
+                       (system-file "systems/template.scm")
+                       (channels-file "channels.scm")
+                       ;; The machine files say (use-modules (systems base)),
+                       ;; so the root of the checkout goes on the load path.
+                       (extra-load-path '("."))
+                       (runtime-config-file "/etc/guix-gitops/runtime.scm")
+                       (introduction %homelab-introduction)
+                       (interval 900)
+                       (health (gitops-health-configuration (port 9902))))))
+       %base-services)
+
+    (guix-service-type
+     config => (guix-configuration
+                (inherit config)
+                (substitute-urls
+                 (append (list "https://substitutes.nonguix.org")
+                         %default-substitute-urls))
+                (authorized-keys
+                 (append (list (local-file "../signing-key.pub"))
+                         %default-authorized-guix-keys))))))
 
 (define* (homelab-operating-system #:key host-name (extra-services '())
                                    (packages '()))
