@@ -88,7 +88,8 @@ the reader that tells it which machine it is, and enough to reach the network."
                        (extra-load-path '("." "modules"))
                        (runtime-config-file "/etc/guix-gitops/runtime.scm")
                        (introduction %homelab-introduction)
-                       (interval 900)
+                       (interval 60)
+                       (log-file "/dev/console")
                        (health (gitops-health-configuration (port 9902))))))
        %base-services)
 
