@@ -33,10 +33,10 @@
 ;;; falls back to cloning.
 
 (define %channel-instance-key
-  "a642la7obo6hobkvl57qox6bdyq2ozbmksb4ywk4iyztejiyii7a")
+  "4wpiutnd3blsopwe5xpkxrwc6wjonikamrcr2u6rvaeb7vt2v6bq")
 
 (define %channel-instance
-  "/gnu/store/jli0k2ad8raii54fs42qy07wygpkd7ld-profile")
+  "/gnu/store/l2yfycqj19n43mmq42zb6xk5visn3x3v-profile")
 
 (define %inferior-cache-service
   (simple-service
