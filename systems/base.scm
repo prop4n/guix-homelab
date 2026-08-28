@@ -41,6 +41,39 @@
           \"2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5\")))))
 "))
 
+;;; The channel instance, shipped rather than rebuilt.
+;;;
+;;; Substitute servers do not help here: this instance is composed of guix
+;;; plus two channels nobody else builds, so no substitute for it exists and a
+;;; fresh machine would compile the whole of Guix before its first
+;;; reconfiguration.  Since channels.scm pins full commit hashes, Guix can
+;;; name the instance it wants without asking the network -- it hashes the
+;;; commits and looks in its inferior cache.  So the entry is put in the image.
+;;;
+;;; Both values must be refreshed together whenever channels.scm moves:
+;;;
+;;;   guix time-machine -C channels.scm -- describe
+;;;   readlink -f /var/guix/profiles/per-user/$USER/inferiors/<key>
+;;;
+;;; The key is the base32 SHA-256 of the pinned commits concatenated in the
+;;; order they appear in channels.scm.  A stale key is not fatal: the machine
+;;; falls back to building the instance itself, slowly.
+
+(define %channel-instance-key
+  "hw7crto7ueoucbehu5qmcwll4onvpswdyrndbczjklv75k2g5una")
+
+(define %channel-instance
+  "/gnu/store/884hdc9j3568rg4cx0rz9wv7dr7rrg7d-profile")
+
+(define %inferior-cache-service
+  (simple-service
+   'gitops-inferior-cache activation-service-type
+   #~(let* ((directory "/var/guix/profiles/per-user/root/inferiors")
+            (entry (string-append directory "/" #$%channel-instance-key)))
+       (mkdir-p directory)
+       (unless (file-exists? entry)
+         (symlink #$%channel-instance entry)))))
+
 (define %homelab-introduction
   ;; Every machine refuses commits that are not signed by this key, wherever
   ;; it is told to look.  It is declared here rather than injected at boot so
@@ -55,7 +88,9 @@ the reader that tells it which machine it is, and enough to reach the network."
   (modify-services
       (append
        extra
-       (list (service dhcpcd-service-type)
+       (list %inferior-cache-service
+
+             (service dhcpcd-service-type)
 
              (service openssh-service-type
                       (openssh-configuration
