@@ -23,7 +23,7 @@
        (name 'guix-gitops)
        (url "https://github.com/prop4n/guix-gitops.git")
        (branch "main")
-       (commit "83a5950d9ee9f820a55ffae7134222f71fe09ba7")
+       (commit "236a7a78cf913528569cfc854dafd8b81f359569")
        (introduction
         (make-channel-introduction
          "09fc5082f184bdecde93dfa742bedf5ff8c587ac"
