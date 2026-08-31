@@ -2,3 +2,4 @@
 *.log
 /.claude
 /result
+/build/

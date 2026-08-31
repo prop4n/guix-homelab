@@ -6,11 +6,12 @@ a commit, and they follow.
 This is not a Guix channel. It is the repository the agent watches.
 
 ```
-channels.scm          the revisions every machine is built from
+modules/              guix-gitops and guix-metadata, vendored
 systems/
-├── base.scm          what every machine has in common
+├── base.scm          what every machine has in common (channels, substitutes, agent)
 ├── template.scm      what a freshly cloned machine is
-└── web01.scm         one machine
+├── web01.scm         a machine: plain nginx
+└── web02.scm         a machine: Miniflux + PostgreSQL
 ```
 
 ## How a machine ends up being itself
@@ -60,14 +61,10 @@ key or the boot-time pieces change — not when a machine's configuration does.
 
 ## Updating everything
 
-Refresh the pinned revisions and push:
-
-```
-guix describe -f channels > channels.scm
-```
-
-Every machine picks it up on its next cycle. That is how package updates and
-security fixes reach the fleet.
+Machines run the Guix baked into the image, so package updates and security
+fixes come by rebuilding and reimporting the image, not by a commit. Bump the
+channels in `%homelab-channels` (in `systems/base.scm`), rebuild the image, and
+reimport it as the template.
 
 ## Signing
 
