@@ -4,8 +4,9 @@
 
 (use-modules (systems base)
              (gnu)
+             (guix gexp)
+             (gnu packages admin)
              (gnu services networking)
-             (gnu services virtualization)
              (gnu services web))
 
 (homelab-operating-system
@@ -23,7 +24,14 @@
                                (gateway "192.168.1.1"))))
                        (name-servers '("1.1.1.1"))))))
  #:extra-services
- (list (service qemu-guest-agent-service-type)
+ (list ;; Debugging: set a known root password so the console login works.
+       (simple-service 'debug-root-password activation-service-type
+         #~(begin
+             (use-modules (ice-9 popen))
+             (let ((port (open-pipe* OPEN_WRITE
+                                     #$(file-append shadow "/sbin/chpasswd"))))
+               (display "root:debug\n" port)
+               (close-pipe port))))
        (service nginx-service-type
                 (nginx-configuration
                  (server-blocks
