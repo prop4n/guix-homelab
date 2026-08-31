@@ -5,6 +5,7 @@
 (use-modules (systems base)
              (gnu)
              (gnu services networking)
+             (gnu services virtualization)
              (gnu services web))
 
 (homelab-operating-system
@@ -22,7 +23,8 @@
                                (gateway "192.168.1.1"))))
                        (name-servers '("1.1.1.1"))))))
  #:extra-services
- (list (service nginx-service-type
+ (list (service qemu-guest-agent-service-type)
+       (service nginx-service-type
                 (nginx-configuration
                  (server-blocks
                   (list (nginx-server-configuration
