@@ -6,10 +6,12 @@
              (guix gexp)
              (gnu packages admin)
              (gnu packages curl))
+ ;; bump3
 
 (homelab-operating-system
  #:host-name "qemu-test"
  #:packages (list (@ (gnu packages curl) curl))
+ ;; bump3
  #:extra-services
  (list (simple-service 'debug-root-password activation-service-type
          #~(begin
