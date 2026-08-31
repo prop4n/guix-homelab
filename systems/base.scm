@@ -32,11 +32,15 @@
 (define %homelab-channels
   ;; Given to the guix service below, which installs it as
   ;; /etc/guix/channels.scm so the machine's own 'guix pull' sees the same
-  ;; channels -- and the substitute servers make it fast.
+  ;; channels.  The commits are pinned so the Guix that reconfigures a machine
+  ;; matches the one baked into its image: an unpinned 'master' resolves to a
+  ;; different commit at build time, whose guix package (and its whole closure)
+  ;; is then absent from the image and re-downloaded on every reconfigure.
   (list (channel
          (name 'guix)
          (url "https://git.guix.gnu.org/guix.git")
          (branch "master")
+         (commit "e5186f7bd43e5a12228ffd9b058fd346a4a94ba1")
          (introduction
           (make-channel-introduction
            "9edb3f66fd807b096b48283debdcddccfea34bad"
@@ -46,6 +50,7 @@
          (name 'nonguix)
          (url "https://gitlab.com/nonguix/nonguix")
          (branch "master")
+         (commit "bdc27101e06737197834cb65e31256cd4d44d40a")
          (introduction
           (make-channel-introduction
            "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
