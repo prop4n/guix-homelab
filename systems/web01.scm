@@ -7,7 +7,7 @@
              (gnu services web))
 
 (homelab-operating-system
- #:host-name "web01"
+ #:host-name "web02"
  #:extra-services
  (list (service nginx-service-type
                 (nginx-configuration
