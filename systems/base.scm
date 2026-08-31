@@ -60,15 +60,17 @@
    (commit "4a72fc42b3e6b879d8664dc980c2843a99494349")
    (signer "90C8 D92A 6D65 856C 0F84  EAE2 7E1F FB95 9BB3 3640")))
 
-(define* (%homelab-services #:key (extra '()))
+(define* (%homelab-services #:key (extra '())
+                            (networking (list (service dhcpcd-service-type))))
   "Return the services every machine runs: the agent that keeps it in sync,
-the reader that tells it which machine it is, and enough to reach the network."
+the reader that tells it which machine it is, and enough to reach the network.
+NETWORKING defaults to DHCP; a machine may pass a static-networking service
+instead."
   (modify-services
       (append
        extra
-       (list (service dhcpcd-service-type)
-
-             (service openssh-service-type
+       networking
+       (list (service openssh-service-type
                       (openssh-configuration
                        (permit-root-login 'prohibit-password)
                        (password-authentication? #f)))
@@ -111,8 +113,10 @@ the reader that tells it which machine it is, and enough to reach the network."
                          %default-authorized-guix-keys))))))
 
 (define* (homelab-operating-system #:key host-name (extra-services '())
-                                   (packages '()))
-  "Return an operating system for a virtual machine in this homelab."
+                                   (packages '())
+                                   (networking (list (service dhcpcd-service-type))))
+  "Return an operating system for a virtual machine in this homelab.
+NETWORKING defaults to DHCP; pass a static-networking service for a fixed address."
   (operating-system
     (host-name host-name)
     (timezone "Europe/Paris")
@@ -135,4 +139,5 @@ the reader that tells it which machine it is, and enough to reach the network."
 
     (packages (append packages %base-packages))
 
-    (services (%homelab-services #:extra extra-services))))
+    (services (%homelab-services #:extra extra-services
+                                 #:networking networking))))
