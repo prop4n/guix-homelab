@@ -91,7 +91,7 @@ instead."
                        (runtime-config-file "/etc/guix-gitops/runtime.scm")
                        (introduction %homelab-introduction)
                        (interval 60)
-                       (log-file "/dev/console")
+                       (log-file "/var/log/guix-gitops.log")
                        (health (gitops-health-configuration (port 9902))))))
        %base-services)
 
