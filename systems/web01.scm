@@ -10,7 +10,7 @@
              (gnu services web))
 
 (homelab-operating-system
- #:host-name "web-test"
+ #:host-name "web-test2"
  #:networking
  (list (service static-networking-service-type
                 (list (static-networking
