@@ -99,7 +99,13 @@ instead."
                        ;; system' aborts.  Allowing it is the intended behaviour here.
                        (allow-downgrades? #t)
                        (log-file "/dev/console")
-                       (health (gitops-health-configuration (port 9902))))))
+                       ;; Bind on all interfaces so the agent's state (applied,
+                       ;; observed, failed, up-to-date) is readable from the LAN --
+                       ;; a reliable window into what a machine is doing, unlike the
+                       ;; serial console.  Exposes commit hashes and status only.
+                       (health (gitops-health-configuration
+                                (host "0.0.0.0")
+                                (port 9902))))))
        %base-services)
 
     (guix-service-type
