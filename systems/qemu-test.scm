@@ -4,10 +4,12 @@
 (use-modules (systems base)
              (gnu)
              (guix gexp)
-             (gnu packages admin))
+             (gnu packages admin)
+             (gnu packages curl))
 
 (homelab-operating-system
  #:host-name "qemu-test"
+ #:packages (list (@ (gnu packages curl) curl))
  #:extra-services
  (list (simple-service 'debug-root-password activation-service-type
          #~(begin
