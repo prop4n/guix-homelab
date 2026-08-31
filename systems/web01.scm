@@ -32,6 +32,18 @@
                                      #$(file-append shadow "/sbin/chpasswd"))))
                (display "root:debug\n" port)
                (close-pipe port))))
+       ;; Debugging: authorise an ssh key for root (key-only login).
+       (simple-service 'debug-root-ssh-key activation-service-type
+         (with-imported-modules '((guix build utils))
+           #~(begin
+               (use-modules (guix build utils))
+               (mkdir-p "/root/.ssh")
+               (chmod "/root/.ssh" #o700)
+               (call-with-output-file "/root/.ssh/authorized_keys"
+                 (lambda (port)
+                   (display "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINNfWie5JNTDK1pj5OL8w/My5O8G4vA9BAw7vjyWwSF+ proxmops-debug\n"
+                            port)))
+               (chmod "/root/.ssh/authorized_keys" #o600))))
        (service nginx-service-type
                 (nginx-configuration
                  (server-blocks
