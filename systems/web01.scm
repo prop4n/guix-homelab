@@ -8,7 +8,7 @@
              (gnu services web))
 
 (homelab-operating-system
- #:host-name "web01-pinned"
+ #:host-name "web01-pinned-test"
  #:networking
  (list (service static-networking-service-type
                 (list (static-networking
