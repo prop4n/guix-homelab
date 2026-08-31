@@ -91,6 +91,13 @@ instead."
                        (runtime-config-file "/etc/guix-gitops/runtime.scm")
                        (introduction %homelab-introduction)
                        (interval 60)
+                       ;; Machines deliberately run the Guix baked into the image
+                       ;; (updated by rebuilding the image, not by a commit).  After
+                       ;; a reboot the running generation records that Guix as its
+                       ;; provenance, so the next reconfigure -- still using the
+                       ;; image's Guix -- looks like a channel downgrade and 'guix
+                       ;; system' aborts.  Allowing it is the intended behaviour here.
+                       (allow-downgrades? #t)
                        (log-file "/var/log/guix-gitops.log")
                        (health (gitops-health-configuration (port 9902))))))
        %base-services)
