@@ -8,7 +8,7 @@
              (gnu services web))
 
 (homelab-operating-system
- #:host-name "web01-test-2"
+ #:host-name "web01-test-3"
  #:networking
  (list (service static-networking-service-type
                 (list (static-networking
