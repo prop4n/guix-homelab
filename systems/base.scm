@@ -98,7 +98,7 @@ instead."
                        ;; image's Guix -- looks like a channel downgrade and 'guix
                        ;; system' aborts.  Allowing it is the intended behaviour here.
                        (allow-downgrades? #t)
-                       (log-file "/var/log/guix-gitops.log")
+                       (log-file "/dev/console")
                        (health (gitops-health-configuration (port 9902))))))
        %base-services)
 
